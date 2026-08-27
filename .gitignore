@@ -29,8 +29,5 @@ paper/
 # Python bytecode from the figure generators
 __pycache__/
 
-# Claude Code local session state (settings.local.json, resume checkpoints)
-.claude/
-
-# source documents the deep-dive tracks were written from — inputs, not site content
+# source documents
 resources/
