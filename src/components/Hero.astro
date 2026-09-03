@@ -1,0 +1,314 @@
+---
+import { Image } from 'astro:assets';
+import Icon from './Icon.astro';
+import Socials from './Socials.astro';
+import HeroBackground from './HeroBackground.astro';
+import { site } from '../data/site';
+import portrait from '../assets/profile/portrait.jpg';
+---
+<section class="hero">
+  <HeroBackground />
+  <div class="container hero-inner">
+    <div class="hero-text">
+      <p class="eyebrow hero-eyebrow">{site.role}</p>
+      <h1 class="hero-title">{site.name}</h1>
+      <p class="hero-lead">
+        Short description. Who am I?
+      </p>
+      <p class="hero-bio muted">{site.bio}</p>
+      <div class="hero-actions">
+        <a class="btn btn--accent" href="/research/">
+          Explore the research
+          <Icon name="arrow-right" size={18} />
+        </a>
+        <span class="hero-pair">
+          <a class="btn" href="/cv/">View CV</a>
+        </span>
+        <Socials
+          class="hero-socials"
+          keys={['github', 'linkedin', 'email']}
+        >
+          <li>
+            <a class="hero-photos" href="/photos/" aria-label="Photos" title="Photos">
+              <Icon name="image" size={20} />
+            </a>
+          </li>
+        </Socials>
+      </div>
+    </div>
+
+    <div class="hero-portrait">
+      <Image src={portrait} alt={site.name} widths={[384, 576]} sizes="(max-width: 880px) 12rem, 18rem" />
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding-top: clamp(2.25rem, 5.5vw, 3.75rem);
+    padding-bottom: var(--section-y);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .hero-inner {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: clamp(2rem, 6vw, 5rem);
+  }
+  .hero-text {
+    max-width: 42rem;
+  }
+  .hero-eyebrow {
+    margin-bottom: 1.25rem;
+  }
+  .hero-title {
+    font-size: var(--fs-hero);
+    margin-bottom: 1.5rem;
+  }
+  .hero-lead {
+    font-size: clamp(1.25rem, 2.2vw, 1.7rem);
+    line-height: 1.32;
+    font-family: var(--font-display);
+    font-weight: var(--fw-light);
+    max-width: 38ch;
+    margin-bottom: 1.5rem;
+    text-wrap: balance;
+  }
+  .hero-bio {
+    max-width: var(--measure);
+    font-size: var(--fs-body);
+    margin-bottom: 2rem;
+  }
+  .hero-name {
+    max-width: var(--measure);
+    margin-bottom: 2rem;
+    border-top: 1px solid var(--color-rule);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .hero-name summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.8rem;
+    color: var(--color-ink);
+    font-size: var(--fs-small);
+    font-weight: var(--fw-medium);
+    cursor: pointer;
+    list-style: none;
+    transition: color var(--transition);
+  }
+  .hero-name summary::-webkit-details-marker {
+    display: none;
+  }
+  .hero-name-head {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+  .hero-name-caret {
+    width: 0.42rem;
+    height: 0.42rem;
+    border-right: 1.5px solid var(--color-muted);
+    border-bottom: 1.5px solid var(--color-muted);
+    transform: rotate(-45deg);
+    transition: transform var(--transition), border-color var(--transition);
+  }
+  .hero-name[open] .hero-name-caret {
+    transform: rotate(45deg);
+  }
+  .hero-name summary:hover {
+    color: var(--color-accent);
+  }
+  .hero-name summary:hover .hero-name-caret {
+    border-color: var(--color-accent);
+  }
+  .hero-name-zh {
+    font-size: var(--fs-small);
+    color: var(--color-muted);
+    letter-spacing: 0.08em;
+  }
+  .hero-name-body {
+    padding-bottom: var(--space-5);
+    font-size: var(--fs-small);
+    line-height: 1.6;
+    color: var(--color-muted);
+  }
+  .hero-name-body p {
+    margin: 0 0 0.9rem;
+  }
+  .hero-name-body a {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .hero-name-say strong {
+    color: var(--color-ink);
+    font-weight: var(--fw-semibold);
+  }
+  .hero-name-tag {
+    display: block;
+    font-size: var(--fs-meta);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-ink);
+    font-weight: var(--fw-medium);
+    margin-bottom: 0.25rem;
+  }
+  .hero-name-audio {
+    margin-top: 0.2rem;
+  }
+  .hero-name-audio audio {
+    width: 100%;
+    max-width: 20rem;
+    height: 2.4rem;
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .hero-pair {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  .hero-pair .btn {
+    justify-content: center;
+  }
+  .hero-actions :global(.hero-socials) {
+    flex-basis: 100%;
+    margin-top: 0.65rem;
+  }
+  .hero-photos {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: var(--radius);
+    color: var(--color-muted);
+    transition: color var(--transition), background var(--transition);
+  }
+  .hero-photos:hover {
+    color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 9%, transparent);
+  }
+  .hero-term {
+    gap: 0.4em;
+    font-family: var(--font-mono);
+    font-size: calc(var(--fs-small) * 0.94);
+  }
+  .hero-term span {
+    color: var(--color-accent);
+  }
+  @media (pointer: coarse) {
+    .hero-photos {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+  }
+  .hero-portrait {
+    flex: none;
+  }
+  .hero-portrait :global(img) {
+    width: clamp(11rem, 20vw, 18rem);
+    height: auto;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    filter: grayscale(12%);
+  }
+
+  @media (min-width: 881px) {
+    .hero {
+      padding-top: clamp(2.5rem, 4.25vw, 3.75rem);
+      padding-bottom: clamp(2.25rem, 4vw, 3.5rem);
+    }
+  }
+
+  @media (max-width: 880px) {
+    .hero-inner {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      text-align: center;
+      gap: clamp(1.5rem, 5vw, 2.25rem);
+    }
+    .hero-text {
+      max-width: 38rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .hero-portrait {
+      order: -1;
+    }
+    .hero-portrait :global(img) {
+      width: clamp(9rem, 28vw, 12rem);
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+    }
+    .hero-eyebrow {
+      margin-bottom: 0.7rem;
+    }
+    .hero-title {
+      margin-bottom: 0.9rem;
+    }
+    .hero-lead {
+      margin-inline: auto;
+      margin-bottom: 1.25rem;
+    }
+    .hero-bio {
+      order: 5;
+      width: 100%;
+      text-align: left;
+      margin-inline: auto;
+      margin-top: 1rem;
+      margin-bottom: 0;
+      font-size: 1rem;
+    }
+    .hero-name {
+      order: 6;
+      width: 100%;
+      text-align: left;
+      margin-top: 1.25rem;
+      margin-bottom: 0;
+    }
+    .hero-actions {
+      order: 4;
+      justify-content: center;
+    }
+    .hero-actions :global(.hero-socials) {
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .hero-actions .btn--accent {
+      flex-basis: 100%;
+      justify-content: center;
+    }
+    .hero-pair {
+      flex-basis: 100%;
+    }
+  }
+
+  @media (max-width: 385px) {
+    .hero-actions :global(.hero-socials) {
+      gap: 0.125rem;
+    }
+  }
+
+  @media (max-width: 330px) {
+    .hero-actions :global(.hero-socials > li) {
+      flex: 0 0 calc(25% - 0.09375rem);
+      display: flex;
+      justify-content: center;
+    }
+  }
+</style>

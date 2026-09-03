@@ -1,0 +1,905 @@
+---
+/**
+ * Mouse-following dynamic.
+ */
+
+---
+
+<canvas data-hero-canvas aria-hidden="true"></canvas>
+
+<style>
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  interface HeroDebugSnapshot {
+    running: boolean;
+    visible: boolean;
+    reduced: boolean;
+    coarse: boolean;
+    width: number;
+    height: number;
+    dpr: number;
+    updateCount: number;
+    renderCount: number;
+    maxFps: number;
+  }
+
+  let instance: {
+    teardown: () => void;
+    snapshot: () => HeroDebugSnapshot;
+  } | null = null;
+
+  function setup() {
+    if (instance) return;
+
+    const canvas = document.querySelector<HTMLCanvasElement>('[data-hero-canvas]');
+    const ctx = canvas?.getContext('2d');
+    const host = canvas?.parentElement;
+
+    if (!canvas || !ctx || !host) return;
+
+    const coarse = window.matchMedia('(pointer: coarse)');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    const MAX_FPS = 24;
+    const FRAME_INTERVAL = 1000 / MAX_FPS;
+
+    const PARTICLE_COUNT = coarse.matches ? 42 : 68;
+    const TRAIL_LENGTH = coarse.matches ? 34 : 52;
+
+    const FLOW_SPEED = coarse.matches ? 0.002 : 0.003;
+    const CURSOR_EASE = 0.055;
+    const IDLE_EASE = 0.018;
+
+    const STAR_COUNT = coarse.matches ? 34 : 58;
+    const BINARY_COUNT = coarse.matches ? 18 : 32;
+
+    const PARTICLE_MIN_SIZE = 0.7;
+    const PARTICLE_MAX_SIZE = 1.8;
+
+    const GLOW = 8;
+
+    let INK = [35, 35, 35];
+    let ACCENT = [78, 92, 180];
+    let SECONDARY = [145, 125, 205];
+
+    function cssRgb(name: string, fallback: number[]) {
+      const raw = getComputedStyle(document.documentElement)
+        .getPropertyValue(name)
+        .trim();
+
+      const parts = raw.split(',').map((part) => Number(part.trim()));
+
+      return parts.length === 3 && parts.every(Number.isFinite)
+        ? parts
+        : fallback;
+    }
+
+    function refreshPalette() {
+      INK = cssRgb('--rgb-ink', [35, 35, 35]);
+      ACCENT = cssRgb('--rgb-accent', [78, 92, 180]);
+
+      SECONDARY = [
+        Math.min(255, ACCENT[0] + 55),
+        Math.min(255, ACCENT[1] + 35),
+        Math.min(255, ACCENT[2] + 35),
+      ];
+
+      if (particles.length) draw(false);
+    }
+
+    type Point = {
+      x: number;
+      y: number;
+    };
+
+    type Particle = {
+      offset: number;
+      spread: number;
+      speed: number;
+      size: number;
+      phase: number;
+      opacity: number;
+    };
+
+    type Star = {
+      x: number;
+      y: number;
+      size: number;
+      opacity: number;
+      phase: number;
+      twinkle: number;
+    };
+
+    type BinaryGlyph = {
+      x: number;
+      y: number;
+      value: string;
+      size: number;
+      opacity: number;
+      phase: number;
+      drift: number;
+    };
+
+    let w = 0;
+    let h = 0;
+    let dpr = 1;
+
+    let tick = 0;
+    let raf = 0;
+    let running = false;
+    let visible = true;
+
+    let lastFrameTime = 0;
+    let updateCount = 0;
+    let renderCount = 0;
+
+    let particles: Particle[] = [];
+    let stars: Star[] = [];
+    let binary: BinaryGlyph[] = [];
+    let trail: Point[] = [];
+
+    const pointer = {
+      x: 0,
+      y: 0,
+      active: false,
+    };
+
+    let head = {
+      x: 0,
+      y: 0,
+    };
+
+    const textEl = host.querySelector<HTMLElement>('.hero-text');
+
+    function random(min: number, max: number) {
+      return min + Math.random() * (max - min);
+    }
+
+    function clamp(value: number, min: number, max: number) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function mix(a: number[], b: number[], amount: number) {
+      return [
+        Math.round(a[0] + (b[0] - a[0]) * amount),
+        Math.round(a[1] + (b[1] - a[1]) * amount),
+        Math.round(a[2] + (b[2] - a[2]) * amount),
+      ];
+    }
+
+    function rgba(rgb: number[], alpha: number) {
+      return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+    }
+
+    function createParticles() {
+      particles = Array.from({ length: PARTICLE_COUNT }, () => ({
+        offset: random(0, Math.PI * 2),
+        spread: random(0.15, 1),
+        speed: random(0.65, 1.35),
+        size: random(PARTICLE_MIN_SIZE, PARTICLE_MAX_SIZE),
+        phase: random(0, Math.PI * 2),
+        opacity: random(0.18, 0.7),
+      }));
+    }
+
+    function createStars() {
+      stars = Array.from({ length: STAR_COUNT }, () => ({
+        x: random(0.02, 0.98),
+        y: random(0.08, 0.92),
+        size: random(0.45, 1.6),
+        opacity: random(0.18, 0.6),
+        phase: random(0, Math.PI * 2),
+        twinkle: random(0.0015, 0.004),
+      }));
+    }
+
+    function createBinary() {
+      binary = Array.from({ length: BINARY_COUNT }, () => ({
+        x: random(0.04, 0.96),
+        y: random(0.1, 0.9),
+        value: Math.random() > 0.5 ? '01' : '10',
+        size: random(8, 13),
+        opacity: random(0.12, 0.34),
+        phase: random(0, Math.PI * 2),
+        drift: random(0.4, 1.2),
+      }));
+    }
+
+    function flowPoint(t: number, spread = 0): Point {
+      const centerX = w * 0.58;
+
+      const amplitude = w * 0.28;
+      const wave = Math.sin(t * Math.PI * 2.1) * amplitude;
+
+      const vertical = h * 0.16;
+      const y = h * 0.5 + (t - 0.5) * h * 0.75;
+
+      const x =
+        centerX +
+        wave +
+        Math.sin(t * Math.PI * 5 + tick * 0.002) *
+          spread *
+          w *
+          0.08;
+
+      return {
+        x,
+        y: y + Math.cos(t * Math.PI * 3 + tick * 0.0015) * spread * vertical,
+      };
+    }
+
+    function flowTangent(t: number) {
+      const epsilon = 0.001;
+
+      const a = flowPoint(clamp(t - epsilon, 0, 1));
+      const b = flowPoint(clamp(t + epsilon, 0, 1));
+
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const length = Math.hypot(dx, dy) || 1;
+
+      return {
+        x: dx / length,
+        y: dy / length,
+      };
+    }
+
+    function resize() {
+      const rect = host!.getBoundingClientRect();
+
+      w = rect.width;
+      h = rect.height;
+
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+
+      canvas!.width = Math.round(w * dpr);
+      canvas!.height = Math.round(h * dpr);
+
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      head = {
+        x: w * 0.58,
+        y: h * 0.5,
+      };
+
+      trail = Array.from({ length: TRAIL_LENGTH }, () => ({
+        x: head.x,
+        y: head.y,
+      }));
+
+      draw(false);
+    }
+
+    function drawStars() {
+      for (const star of stars) {
+        const twinkle =
+          star.opacity +
+          Math.sin(tick * star.twinkle + star.phase) * 0.12;
+
+        const x = star.x * w;
+        const y = star.y * h;
+        const alpha = clamp(twinkle, 0.05, 0.8);
+
+        ctx!.fillStyle = rgba(SECONDARY, alpha);
+        ctx!.beginPath();
+        ctx!.arc(x, y, star.size, 0, Math.PI * 2);
+        ctx!.fill();
+
+        if (star.size > 1.2) {
+          ctx!.strokeStyle = rgba(SECONDARY, alpha * 0.45);
+          ctx!.lineWidth = 0.6;
+
+          ctx!.beginPath();
+          ctx!.moveTo(x - star.size * 3, y);
+          ctx!.lineTo(x + star.size * 3, y);
+          ctx!.moveTo(x, y - star.size * 3);
+          ctx!.lineTo(x, y + star.size * 3);
+          ctx!.stroke();
+        }
+      }
+    }
+
+    function drawBinary() {
+      ctx!.textAlign = 'center';
+      ctx!.textBaseline = 'middle';
+      ctx!.font =
+        '500 11px ui-monospace, SFMono-Regular, Menlo, Monaco, monospace';
+
+      for (const glyph of binary) {
+        const drift =
+          Math.sin(tick * 0.001 * glyph.drift + glyph.phase) * 5;
+
+        const alpha =
+          glyph.opacity +
+          Math.sin(tick * 0.002 + glyph.phase) * 0.05;
+
+        ctx!.fillStyle = rgba(ACCENT, clamp(alpha, 0.05, 0.45));
+
+        ctx!.save();
+        ctx!.translate(
+          glyph.x * w,
+          glyph.y * h + drift
+        );
+        ctx!.globalAlpha = clamp(alpha, 0.05, 0.45);
+        ctx!.font =
+          `500 ${glyph.size}px ui-monospace, SFMono-Regular, Menlo, Monaco, monospace`;
+
+        ctx!.fillText(glyph.value, 0, 0);
+        ctx!.restore();
+      }
+    }
+
+    function drawDataStream() {
+      const samples = 90;
+
+      for (let line = 0; line < 3; line++) {
+        ctx!.beginPath();
+
+        for (let i = 0; i <= samples; i++) {
+          const t = i / samples;
+          const point = flowPoint(
+            t,
+            (line - 1) * 0.55
+          );
+
+          if (i === 0) {
+            ctx!.moveTo(point.x, point.y);
+          } else {
+            ctx!.lineTo(point.x, point.y);
+          }
+        }
+
+        const lineColor =
+          line === 1
+            ? ACCENT
+            : mix(ACCENT, SECONDARY, 0.5);
+
+        ctx!.strokeStyle = rgba(
+          lineColor,
+          line === 1 ? 0.16 : 0.07
+        );
+
+        ctx!.lineWidth = line === 1 ? 1.1 : 0.7;
+        ctx!.stroke();
+      }
+
+      for (const particle of particles) {
+        const t =
+          (particle.offset +
+            tick * FLOW_SPEED * particle.speed) %
+          1;
+
+        const point = flowPoint(
+          t,
+          Math.sin(particle.phase + tick * 0.002) *
+            particle.spread
+        );
+
+        const tangent = flowTangent(t);
+
+        const pulse =
+          0.75 +
+          Math.sin(tick * 0.025 + particle.phase) * 0.25;
+
+        const colorAmount = clamp(
+          t * 1.2,
+          0,
+          1
+        );
+
+        const color = mix(
+          ACCENT,
+          SECONDARY,
+          colorAmount
+        );
+
+        const alpha =
+          particle.opacity *
+          pulse *
+          (0.35 + 0.65 * particle.spread);
+
+        ctx!.fillStyle = rgba(color, alpha);
+
+        ctx!.beginPath();
+        ctx!.arc(
+          point.x,
+          point.y,
+          particle.size,
+          0,
+          Math.PI * 2
+        );
+        ctx!.fill();
+
+        if (particle.opacity > 0.48) {
+          ctx!.strokeStyle = rgba(
+            color,
+            alpha * 0.45
+          );
+          ctx!.lineWidth = 0.7;
+
+          ctx!.beginPath();
+          ctx!.moveTo(
+            point.x - tangent.x * 7,
+            point.y - tangent.y * 7
+          );
+          ctx!.lineTo(point.x, point.y);
+          ctx!.stroke();
+        }
+      }
+    }
+
+    function drawHead() {
+      const glow = ctx!.createRadialGradient(
+        head.x,
+        head.y,
+        0,
+        head.x,
+        head.y,
+        GLOW * 3
+      );
+
+      glow.addColorStop(
+        0,
+        rgba(SECONDARY, 0.24)
+      );
+      glow.addColorStop(
+        0.45,
+        rgba(ACCENT, 0.08)
+      );
+      glow.addColorStop(
+        1,
+        rgba(ACCENT, 0)
+      );
+
+      ctx!.fillStyle = glow;
+      ctx!.beginPath();
+      ctx!.arc(
+        head.x,
+        head.y,
+        GLOW * 3,
+        0,
+        Math.PI * 2
+      );
+      ctx!.fill();
+
+      ctx!.fillStyle = rgba(
+        SECONDARY,
+        pointer.active ? 0.75 : 0.42
+      );
+
+      ctx!.beginPath();
+      ctx!.arc(
+        head.x,
+        head.y,
+        pointer.active ? 2.3 : 1.6,
+        0,
+        Math.PI * 2
+      );
+      ctx!.fill();
+    }
+
+    function drawTrail() {
+      if (trail.length < 2) return;
+
+      ctx!.beginPath();
+      ctx!.moveTo(
+        trail[0].x,
+        trail[0].y
+      );
+
+      for (let i = 1; i < trail.length; i++) {
+        ctx!.lineTo(
+          trail[i].x,
+          trail[i].y
+        );
+      }
+
+      const gradient = ctx!.createLinearGradient(
+        trail[trail.length - 1].x,
+        trail[trail.length - 1].y,
+        trail[0].x,
+        trail[0].y
+      );
+
+      gradient.addColorStop(
+        0,
+        rgba(ACCENT, 0)
+      );
+      gradient.addColorStop(
+        0.55,
+        rgba(ACCENT, 0.035)
+      );
+      gradient.addColorStop(
+        1,
+        rgba(SECONDARY, pointer.active ? 0.22 : 0.09)
+      );
+
+      ctx!.strokeStyle = gradient;
+      ctx!.lineWidth = pointer.active ? 2 : 1;
+      ctx!.lineCap = 'round';
+      ctx!.stroke();
+    }
+
+
+    function drawTextClearance() {
+      if (!textEl) return;
+
+      const canvasRect = canvas!.getBoundingClientRect();
+      const textRect = textEl.getBoundingClientRect();
+
+      const x =
+        textRect.left -
+        canvasRect.left -
+        18;
+
+      const y =
+        textRect.top -
+        canvasRect.top -
+        18;
+
+      const width =
+        textRect.width + 36;
+
+      const height =
+        textRect.height + 36;
+
+      ctx!.save();
+
+      ctx!.globalCompositeOperation =
+        'destination-out';
+
+      const gradient = ctx!.createRadialGradient(
+        x + width / 2,
+        y + height / 2,
+        Math.min(width, height) * 0.18,
+        x + width / 2,
+        y + height / 2,
+        Math.max(width, height) * 0.7
+      );
+
+      gradient.addColorStop(
+        0,
+        'rgba(0, 0, 0, 0.82)'
+      );
+
+      gradient.addColorStop(
+        0.65,
+        'rgba(0, 0, 0, 0.55)'
+      );
+
+      gradient.addColorStop(
+        1,
+        'rgba(0, 0, 0, 0)'
+      );
+
+      ctx!.fillStyle = gradient;
+
+      ctx!.fillRect(
+        x,
+        y,
+        width,
+        height
+      );
+
+      ctx!.restore();
+    }
+
+
+    function draw(trailMode: boolean) {
+      renderCount++;
+
+      ctx!.clearRect(0, 0, w, h);
+
+      drawStars();
+      drawBinary();
+      drawDataStream();
+      drawTrail();
+      drawHead();
+
+      drawTextClearance();
+
+      void trailMode;
+    }
+
+    function step(frameScale: number) {
+      tick += frameScale;
+      updateCount++;
+
+      let targetX: number;
+      let targetY: number;
+
+      if (pointer.active) {
+        targetX = pointer.x;
+        targetY = pointer.y;
+      } else {
+        targetX =
+          w * 0.58 +
+          Math.sin(tick * 0.004) * w * 0.16;
+
+        targetY =
+          h * 0.5 +
+          Math.cos(tick * 0.003) * h * 0.22;
+      }
+
+      const ease =
+        pointer.active
+          ? CURSOR_EASE
+          : IDLE_EASE;
+
+      head.x +=
+        (targetX - head.x) *
+        (1 - Math.pow(1 - ease, frameScale));
+
+      head.y +=
+        (targetY - head.y) *
+        (1 - Math.pow(1 - ease, frameScale));
+
+      trail.unshift({
+        x: head.x,
+        y: head.y,
+      });
+
+      if (trail.length > TRAIL_LENGTH) {
+        trail.pop();
+      }
+
+      draw(true);
+    }
+
+    function frame(time: number) {
+      if (!running) return;
+
+      raf = requestAnimationFrame(frame);
+
+      if (lastFrameTime === 0) {
+        lastFrameTime =
+          time - FRAME_INTERVAL;
+      }
+
+      const elapsed =
+        time - lastFrameTime;
+
+      if (elapsed < FRAME_INTERVAL) {
+        return;
+      }
+
+      lastFrameTime =
+        time -
+        (elapsed % FRAME_INTERVAL);
+
+      step(
+        Math.min(
+          4,
+          elapsed / (1000 / 60)
+        )
+      );
+    }
+
+    function start() {
+      if (
+        running ||
+        reduce.matches ||
+        coarse.matches ||
+        !visible ||
+        document.hidden
+      ) {
+        return;
+      }
+
+      running = true;
+      lastFrameTime = 0;
+
+      raf = requestAnimationFrame(frame);
+    }
+
+    function stop() {
+      running = false;
+
+      cancelAnimationFrame(raf);
+
+      raf = 0;
+      lastFrameTime = 0;
+    }
+
+
+    const onPointerMove = (event: PointerEvent) => {
+      const rect =
+        host!.getBoundingClientRect();
+
+      const x =
+        event.clientX - rect.left;
+
+      const y =
+        event.clientY - rect.top;
+
+      pointer.active =
+        x >= 0 &&
+        y >= 0 &&
+        x <= rect.width &&
+        y <= rect.height;
+
+      if (pointer.active) {
+        pointer.x = x;
+        pointer.y = y;
+      }
+    };
+
+    const onBlur = () => {
+      pointer.active = false;
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        stop();
+      } else {
+        start();
+      }
+    };
+
+    const onReduceChange = () => {
+      if (
+        reduce.matches ||
+        coarse.matches
+      ) {
+        stop();
+        draw(false);
+      } else {
+        start();
+      }
+    };
+
+    const onThemeChange = () => {
+      refreshPalette();
+    };
+
+    if (!coarse.matches) {
+      window.addEventListener(
+        'pointermove',
+        onPointerMove,
+        { passive: true }
+      );
+
+      window.addEventListener(
+        'blur',
+        onBlur
+      );
+    }
+
+    const resizeObserver =
+      new ResizeObserver(() => {
+        resize();
+      });
+
+    resizeObserver.observe(host);
+
+    if (textEl) {
+      resizeObserver.observe(textEl);
+    }
+
+    document.addEventListener(
+      'visibilitychange',
+      onVisibilityChange
+    );
+
+    document.addEventListener(
+      'khc:theme-change',
+      onThemeChange
+    );
+
+    const intersectionObserver =
+      new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            visible =
+              entry.isIntersecting;
+
+            if (visible) {
+              start();
+            } else {
+              stop();
+            }
+          }
+        },
+        { threshold: 0 }
+      );
+
+    intersectionObserver.observe(host);
+
+    reduce.addEventListener(
+      'change',
+      onReduceChange
+    );
+
+    createParticles();
+    createStars();
+    createBinary();
+
+    refreshPalette();
+    resize();
+
+    if (
+      !reduce.matches &&
+      !coarse.matches
+    ) {
+      start();
+    }
+
+    const snapshot =
+      (): HeroDebugSnapshot => ({
+        running,
+        visible,
+        reduced: reduce.matches,
+        coarse: coarse.matches,
+        width: w,
+        height: h,
+        dpr,
+        updateCount,
+        renderCount,
+        maxFps: MAX_FPS,
+      });
+
+    instance = {
+      snapshot,
+
+      teardown() {
+        stop();
+
+        resizeObserver.disconnect();
+        intersectionObserver.disconnect();
+
+        if (!coarse.matches) {
+          window.removeEventListener(
+            'pointermove',
+            onPointerMove
+          );
+
+          window.removeEventListener(
+            'blur',
+            onBlur
+          );
+        }
+
+        document.removeEventListener(
+          'visibilitychange',
+          onVisibilityChange
+        );
+
+        document.removeEventListener(
+          'khc:theme-change',
+          onThemeChange
+        );
+
+        particles = [];
+        stars = [];
+        binary = [];
+        trail = [];
+      },
+    };
+  }
+
+  function cleanup() {
+    instance?.teardown();
+    instance = null;
+  }
+
+  setup();
+
+  document.addEventListener(
+    'astro:page-load',
+    setup
+  );
+
+  document.addEventListener(
+    'astro:before-swap',
+    cleanup
+  );
+</script>

@@ -1,0 +1,1283 @@
+---
+import Icon from './Icon.astro';
+import { site, nav } from '../data/site';
+
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/' ? path === '/' : path.startsWith(href.replace(/\/$/, ''));
+
+// Only show primary items.
+const headerNav = nav.filter((item) => !item.footerOnly);
+---
+
+<header class="site-header" transition:persist="site-header">
+  <div class="container header-inner">
+    <a href="/" class="wordmark" aria-label={`${site.name} — home`}>
+      <span class="wordmark-mark" aria-hidden="true">
+        <img src="/favicon.svg" alt="" width="32" height="32" />
+      </span>
+      <span class="wordmark-name">{site.name}</span>
+    </a>
+
+    <nav class="nav-desktop" aria-label="Primary">
+      <ul>
+        {
+          headerNav.map((item) => (
+            <li>
+              <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="header-actions">
+      <a
+        class="search-shortcut"
+        href="/search/"
+        aria-label="Search or commands (⌘K)"
+        title="Search or commands (⌘K)"
+        data-open-command-palette
+      >
+        <Icon name="search" size={19} />
+      </a>
+
+      <div class="top-theme-wrapper">
+        <button
+          class="top-theme-btn"
+          type="button"
+          data-top-theme-btn
+          data-theme-state="light"
+          aria-haspopup="menu"
+          aria-expanded="false"
+          aria-label="Appearance settings"
+          title="Adjust color theme, ambient cells, or 1988 CRT mode"
+        >
+          <span class="theme-icon-container">
+            <span class="theme-toggle-icon theme-toggle-icon--light" aria-hidden="true">
+              <Icon name="sun" size={19} />
+            </span>
+            <span class="theme-toggle-icon theme-toggle-icon--dark" aria-hidden="true">
+              <Icon name="moon" size={19} />
+            </span>
+            <span class="theme-toggle-icon theme-toggle-icon--parchment" aria-hidden="true">
+              <Icon name="parchment" size={19} />
+            </span>
+            <span class="theme-toggle-icon theme-toggle-icon--nord" aria-hidden="true">
+              <Icon name="nord" size={19} />
+            </span>
+            <span class="theme-toggle-icon theme-toggle-icon--monokai" aria-hidden="true">
+              <Icon name="monokai" size={19} />
+            </span>
+            <span class="theme-toggle-icon theme-toggle-icon--cyberdeck" aria-hidden="true">
+              <Icon name="cyberdeck" size={19} />
+            </span>
+            <span
+              class="theme-toggle-icon theme-toggle-icon--crt"
+              data-top-crt-badge
+              aria-hidden="true"
+            >
+              ⚡
+            </span>
+          </span>
+          <span class="top-theme-caret" aria-hidden="true">▾</span>
+        </button>
+
+        <div class="top-theme-popover" data-top-theme-popover role="menu" hidden>
+
+          <div class="popover-section">
+            <span class="popover-heading">Modern Themes</span>
+            <div class="popover-grid">
+              <button
+                type="button"
+                class="popover-opt-btn"
+                data-theme-choice="light"
+                role="menuitem"
+              >
+                <span class="opt-icon-wrap" aria-hidden="true">
+                  <Icon name="sun" size={14} />
+                </span>
+                <span class="opt-text">Light</span>
+              </button>
+              <button
+                type="button"
+                class="popover-opt-btn"
+                data-theme-choice="dark"
+                role="menuitem"
+              >
+                <span class="opt-icon-wrap" aria-hidden="true">
+                  <Icon name="moon" size={14} />
+                </span>
+                <span class="opt-text">Dark</span>
+              </button>
+              <button
+                type="button"
+                class="popover-opt-btn"
+                data-theme-choice="parchment"
+                role="menuitem"
+              >
+                <span class="opt-icon-wrap" aria-hidden="true">
+                  <Icon name="parchment" size={14} />
+                </span>
+                <span class="opt-text">Parchment</span>
+              </button>
+              <button
+                type="button"
+                class="popover-opt-btn"
+                data-theme-choice="nord"
+                role="menuitem"
+              >
+                <span class="opt-icon-wrap" aria-hidden="true">
+                  <Icon name="nord" size={14} />
+                </span>
+                <span class="opt-text">Nord</span>
+              </button>
+              <button
+                type="button"
+                class="popover-opt-btn"
+                data-theme-choice="monokai"
+                role="menuitem"
+              >
+                <span class="opt-icon-wrap" aria-hidden="true">
+                  <Icon name="monokai" size={14} />
+                </span>
+                <span class="opt-text">Monokai</span>
+              </button>
+              <button
+                type="button"
+                class="popover-opt-btn"
+                data-theme-choice="cyberdeck"
+                role="menuitem"
+              >
+                <span class="opt-icon-wrap" aria-hidden="true">
+                  <Icon name="cyberdeck" size={14} />
+                </span>
+                <span class="opt-text">Cyberdeck</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="popover-section popover-section--crt">
+            <div class="popover-heading-row">
+              <span class="popover-heading" id="crt-heading">1988 CRT</span>
+              <button
+                type="button"
+                class="crt-switch"
+                data-crt-switch
+                role="switch"
+                aria-checked="false"
+                aria-labelledby="crt-heading"
+              >
+                <span class="crt-switch-track" aria-hidden="true"><span class="crt-switch-thumb"></span></span>
+                <span class="crt-switch-text" data-crt-switch-text>Off</span>
+              </button>
+            </div>
+            <div class="popover-crt-row" role="radiogroup" aria-labelledby="crt-heading" data-crt-colors>
+              <button
+                type="button"
+                class="popover-crt-btn popover-crt-btn--amber"
+                data-crt-choice="amber"
+                role="radio"
+                aria-checked="false"
+              >
+                <span class="crt-swatch" aria-hidden="true"></span>
+                <span>Amber</span>
+              </button>
+              <button
+                type="button"
+                class="popover-crt-btn popover-crt-btn--green"
+                data-crt-choice="green"
+                role="radio"
+                aria-checked="false"
+              >
+                <span class="crt-swatch" aria-hidden="true"></span>
+                <span>Green</span>
+              </button>
+              <button
+                type="button"
+                class="popover-crt-btn popover-crt-btn--cyan"
+                data-crt-choice="cyan"
+                role="radio"
+                aria-checked="false"
+              >
+                <span class="crt-swatch" aria-hidden="true"></span>
+                <span>Cyan</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <button
+        class="nav-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+        aria-label="Open menu"
+      >
+        <Icon name="menu" size={24} />
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Drawer -->
+  <div class="mobile-menu" id="mobile-menu" hidden>
+    <nav aria-label="Mobile">
+      <ul>
+        {
+          headerNav.map((item) => (
+            <li>
+              <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(0.75rem, 2vw, 1.5rem);
+    min-height: 4.25rem;
+  }
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--color-ink);
+    font-family: var(--font-display);
+    flex-shrink: 0;
+  }
+  .wordmark:hover {
+    text-decoration: none;
+    color: var(--color-ink);
+  }
+  .wordmark-mark {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 2.15rem;
+    height: 2.15rem;
+  }
+  .wordmark-mark img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .wordmark-name {
+    font-weight: var(--fw-regular);
+    font-size: 1.05rem;
+    letter-spacing: var(--tracking-tight);
+    white-space: nowrap;
+  }
+  .nav-desktop {
+    min-width: 0;
+  }
+  .nav-desktop ul {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: clamp(0.6rem, 1.4vw, 1.5rem);
+    margin: 0;
+    padding: 0;
+  }
+  .nav-desktop a {
+    color: var(--color-ink);
+    font-size: var(--fs-small);
+    font-weight: var(--fw-medium);
+    padding-block: 0.4rem;
+    position: relative;
+    white-space: nowrap;
+  }
+  .nav-desktop a:hover {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  .nav-desktop a[aria-current='page'] {
+    color: var(--color-accent);
+  }
+  /* Underline "splices" in from the left on hover/focus */
+  .nav-desktop a::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 1.5px;
+    background: var(--color-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 200ms ease;
+  }
+  .nav-desktop a:hover::after,
+  .nav-desktop a:focus-visible::after,
+  .nav-desktop a[aria-current='page']::after {
+    transform: scaleX(1);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .search-shortcut,
+  .nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    background: none;
+    border: none;
+    color: var(--color-ink);
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 999px;
+    transition: all var(--transition);
+  }
+  .search-shortcut {
+    text-decoration: none;
+  }
+  .search-shortcut:hover,
+  .nav-toggle:hover {
+    color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+    text-decoration: none;
+  }
+
+  .nav-toggle {
+    display: none;
+  }
+
+  /* Top Theme Control Wrapper & Popover */
+  .top-theme-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .top-theme-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.65rem;
+    height: 40px;
+    border: 1px solid var(--color-rule);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-surface) 75%, transparent);
+    color: var(--color-ink);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all var(--transition);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .top-theme-btn:hover,
+  .top-theme-btn[aria-expanded='true'] {
+    color: var(--color-accent);
+    border-color: color-mix(in srgb, var(--color-accent) 45%, var(--color-rule));
+    background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+  }
+
+  .theme-icon-container {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+  }
+
+  .theme-toggle-icon {
+    grid-area: 1 / 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.75);
+    transition:
+      opacity var(--transition),
+      transform var(--transition);
+  }
+
+  .theme-toggle-icon--crt {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  /* Each theme displays its own dedicated bespoke icon */
+  .top-theme-btn[data-theme-state='light'] .theme-toggle-icon--light,
+  .top-theme-btn[data-theme-state='dark'] .theme-toggle-icon--dark,
+  .top-theme-btn[data-theme-state='parchment'] .theme-toggle-icon--parchment,
+  .top-theme-btn[data-theme-state='nord'] .theme-toggle-icon--nord,
+  .top-theme-btn[data-theme-state='monokai'] .theme-toggle-icon--monokai,
+  .top-theme-btn[data-theme-state='cyberdeck'] .theme-toggle-icon--cyberdeck {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Individual active icon colors for each theme */
+  .theme-toggle-icon--light {
+    color: #f59e0b;
+  }
+
+  .theme-toggle-icon--dark {
+    color: #75c7af;
+  }
+
+  .theme-toggle-icon--parchment {
+    color: #c2410c;
+  }
+
+  .theme-toggle-icon--nord {
+    color: #88c0d0;
+  }
+
+  .theme-toggle-icon--monokai {
+    color: #ffd866;
+  }
+
+  .theme-toggle-icon--cyberdeck {
+    color: #22d3ee;
+  }
+
+  .top-theme-btn[data-crt-active='true'] .theme-toggle-icon--light,
+  .top-theme-btn[data-crt-active='true'] .theme-toggle-icon--dark,
+  .top-theme-btn[data-crt-active='true'] .theme-toggle-icon--parchment,
+  .top-theme-btn[data-crt-active='true'] .theme-toggle-icon--nord,
+  .top-theme-btn[data-crt-active='true'] .theme-toggle-icon--monokai,
+  .top-theme-btn[data-crt-active='true'] .theme-toggle-icon--cyberdeck {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  .top-theme-btn[data-crt-active='true'] .theme-toggle-icon--crt {
+    opacity: 1;
+    transform: none;
+  }
+
+  .top-theme-caret {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    transition: transform 0.2s ease;
+  }
+
+  .top-theme-btn[aria-expanded='true'] .top-theme-caret {
+    transform: rotate(180deg);
+  }
+
+  .top-theme-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 244px;
+    max-height: 80vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.75rem;
+    background: color-mix(in srgb, var(--color-surface) 95%, var(--color-ink) 5%);
+    border: 1px solid var(--color-rule);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    z-index: 101;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    box-sizing: border-box;
+    animation: popoverFadeIn 0.15s ease-out;
+  }
+
+  .top-theme-popover[hidden] {
+    display: none;
+  }
+
+  @keyframes popoverFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .popover-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .popover-section--cells {
+    margin-top: 0.15rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--color-rule);
+  }
+
+  .popover-heading {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-meta);
+    color: var(--color-muted);
+    padding-inline: 0.35rem;
+  }
+
+  .popover-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .popover-opt-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.55rem;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-ink);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.12s ease;
+    box-sizing: border-box;
+  }
+
+  .popover-opt-btn:hover {
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    color: var(--color-accent);
+  }
+
+  .popover-opt-btn.is-active {
+    background: var(--color-surface);
+    border-color: var(--color-rule);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .opt-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .popover-opt-btn[data-theme-choice='light'] .opt-icon-wrap,
+  .mobile-theme-btn[data-theme-choice='light'] .opt-icon-wrap {
+    color: #f59e0b;
+  }
+
+  .popover-opt-btn[data-theme-choice='dark'] .opt-icon-wrap,
+  .mobile-theme-btn[data-theme-choice='dark'] .opt-icon-wrap {
+    color: #75c7af;
+  }
+
+  .popover-opt-btn[data-theme-choice='parchment'] .opt-icon-wrap,
+  .mobile-theme-btn[data-theme-choice='parchment'] .opt-icon-wrap {
+    color: #c2410c;
+  }
+
+  .popover-opt-btn[data-theme-choice='nord'] .opt-icon-wrap,
+  .mobile-theme-btn[data-theme-choice='nord'] .opt-icon-wrap {
+    color: #88c0d0;
+  }
+
+  .popover-opt-btn[data-theme-choice='monokai'] .opt-icon-wrap,
+  .mobile-theme-btn[data-theme-choice='monokai'] .opt-icon-wrap {
+    color: #ffd866;
+  }
+
+  .popover-opt-btn[data-theme-choice='cyberdeck'] .opt-icon-wrap,
+  .mobile-theme-btn[data-theme-choice='cyberdeck'] .opt-icon-wrap {
+    color: #22d3ee;
+  }
+
+  .popover-crt-row {
+    display: flex;
+    gap: 0.35rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .popover-crt-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.35rem;
+    border: 1px solid var(--color-rule);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--color-muted);
+    font-family: inherit;
+    font-size: 0.78125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    box-sizing: border-box;
+  }
+
+  .popover-crt-btn:hover {
+    color: var(--color-ink);
+    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  }
+
+  .popover-crt-btn--amber.is-active {
+    color: #ffb000 !important;
+    border-color: #ffb000 !important;
+    background: rgba(255, 176, 0, 0.12) !important;
+    font-weight: 600;
+  }
+
+  .popover-crt-btn--green.is-active {
+    color: #33ff33 !important;
+    border-color: #33ff33 !important;
+    background: rgba(51, 255, 51, 0.12) !important;
+    font-weight: 600;
+  }
+
+  .popover-crt-btn--cyan.is-active {
+    color: #38fdf8 !important;
+    border-color: #38fdf8 !important;
+    background: rgba(56, 253, 248, 0.12) !important;
+    font-weight: 600;
+  }
+
+  .cell-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .cell-mode-grid--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cell-lab-link-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    margin-top: 0.65rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+    border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+    color: var(--color-ink);
+    font-size: 0.78125rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .cell-lab-link-btn:hover {
+    background: color-mix(in srgb, var(--color-accent) 22%, var(--color-surface));
+    border-color: var(--color-accent);
+    transform: translateY(-1px);
+  }
+
+  .cell-action-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .popover-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .crt-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.25rem;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    color: var(--color-muted);
+    font-size: var(--fs-meta);
+    font-family: inherit;
+  }
+  .crt-switch-track {
+    width: 1.85rem;
+    height: 1rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--color-ink) 18%, transparent);
+    padding: 2px;
+    display: inline-flex;
+    transition: background var(--transition);
+  }
+  .crt-switch-thumb {
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: var(--color-surface);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform var(--transition);
+  }
+  .crt-switch.is-on {
+    color: var(--color-ink);
+  }
+  .crt-switch.is-on .crt-switch-track {
+    background: var(--color-accent);
+  }
+  .crt-switch.is-on .crt-switch-thumb {
+    transform: translateX(0.85rem);
+  }
+  .crt-switch:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--radius);
+  }
+
+  .crt-swatch {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    flex: none;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+  }
+  .popover-crt-btn--amber .crt-swatch { background: #ffb000; }
+  .popover-crt-btn--green .crt-swatch { background: #33ff66; }
+  .popover-crt-btn--cyan .crt-swatch { background: #38d9ff; }
+
+  .popover-crt-row.is-disabled {
+    opacity: 0.42;
+  }
+  .popover-crt-btn:disabled {
+    cursor: not-allowed;
+  }
+
+  .cell-mode-grid--three {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.3rem;
+  }
+
+  .cell-control-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 36px;
+    padding: 0.45rem 0.4rem;
+    border: 1px solid var(--color-rule);
+    border-radius: 7px;
+    background: transparent;
+    color: var(--color-muted);
+    font-family: inherit;
+    font-size: 0.78125rem;
+    font-weight: 500;
+    line-height: 1.2;
+    cursor: pointer;
+    transition:
+      color 0.12s ease,
+      border-color 0.12s ease,
+      background-color 0.12s ease,
+      box-shadow 0.12s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .cell-control-btn:hover {
+    color: var(--color-ink);
+    background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  }
+
+  .cell-control-btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .cell-control-btn.is-active {
+    color: var(--color-ink);
+    border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    font-weight: 650;
+  }
+
+  .cell-lab-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.2rem;
+    padding-top: 0.55rem;
+    border-top: 1px dashed var(--color-rule);
+  }
+
+  .cell-lab-actions[hidden] {
+    display: none;
+  }
+
+  .cell-control-hint,
+  .cell-reduced-motion-note {
+    color: var(--color-muted);
+    font-size: 0.6875rem;
+    line-height: 1.4;
+    padding-inline: 0.35rem;
+  }
+
+  .cell-reduced-motion-note {
+    display: none;
+    color: var(--color-ink);
+    margin-top: 0.15rem;
+  }
+
+  .theme-swatch-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+  .theme-swatch-dot--light {
+    background: #2e6e5e;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+  }
+  .theme-swatch-dot--parchment {
+    background: #c2410c;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+  }
+  .theme-swatch-dot--dark {
+    background: #75c7af;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+  .theme-swatch-dot--nord {
+    background: #88c0d0;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+  .theme-swatch-dot--monokai {
+    background: #ffd866;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+  .theme-swatch-dot--cyberdeck {
+    background: #22d3ee;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+  }
+
+  .opt-text {
+    flex: 1;
+  }
+
+  /* Mobile Drawer Menu */
+  .mobile-menu {
+    border-top: 1px solid var(--color-rule);
+    background: var(--color-bg);
+    max-height: calc(100dvh - 4.25rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .mobile-menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem var(--gutter) 0.5rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .mobile-menu a {
+    display: block;
+    padding: 0.85rem 0;
+    color: var(--color-ink);
+    font-size: 1.05rem;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .mobile-menu a[aria-current='page'] {
+    color: var(--color-accent);
+  }
+
+  .mobile-theme-drawer {
+    padding: 1rem var(--gutter) 1.5rem;
+    border-top: 1px solid var(--color-rule);
+    background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .mobile-drawer-heading {
+    margin: 0;
+  }
+
+  .mobile-theme-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.35rem;
+  }
+
+  .mobile-theme-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .mobile-theme-btn {
+    flex: 1;
+    min-width: 60px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0.55rem 0.35rem;
+    min-height: 40px;
+    border: 1px solid var(--color-rule);
+    border-radius: 8px;
+    background: var(--color-surface);
+    color: var(--color-muted);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .mobile-theme-btn:hover {
+    color: var(--color-ink);
+  }
+
+  .mobile-theme-btn.is-active {
+    color: var(--color-ink);
+    border-color: var(--color-accent);
+    font-weight: 600;
+    background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  .mobile-theme-btn--amber.is-active {
+    color: #ffb000 !important;
+    border-color: #ffb000 !important;
+    background: rgba(255, 176, 0, 0.15) !important;
+  }
+
+  .mobile-theme-btn--green.is-active {
+    color: #33ff33 !important;
+    border-color: #33ff33 !important;
+    background: rgba(51, 255, 51, 0.15) !important;
+  }
+
+  .mobile-theme-btn--cyan.is-active {
+    color: #38fdf8 !important;
+    border-color: #38fdf8 !important;
+    background: rgba(56, 253, 248, 0.15) !important;
+  }
+
+  .mobile-cell-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--color-rule);
+  }
+
+  .mobile-cell-controls .cell-control-btn {
+    min-height: 44px;
+    background: var(--color-surface);
+    font-size: 0.8125rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cell-control-btn {
+      transition: none;
+    }
+
+    .cell-reduced-motion-note {
+      display: block;
+    }
+  }
+
+  @media (max-width: 960px) {
+    .nav-desktop {
+      display: none;
+    }
+    .nav-toggle {
+      display: inline-flex;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .wordmark-name {
+      font-size: 0.95rem;
+    }
+    .top-theme-btn {
+      padding: 0.35rem 0.5rem;
+      height: 38px;
+    }
+    .top-theme-popover {
+      right: -20px;
+      width: 230px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .header-inner {
+      gap: 0.35rem;
+    }
+    .header-actions {
+      gap: 0.2rem;
+    }
+    .top-theme-btn {
+      width: 42px;
+      padding-inline: 0;
+      justify-content: center;
+    }
+    .top-theme-caret {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  interface ThemeApi {
+    get: () => string;
+    set: (t: string) => void;
+    toggle: () => void;
+    sync: () => void;
+  }
+  interface CrtApi {
+    get: () => string;
+    set: (m: string) => void;
+    toggle: () => void;
+    sync: () => void;
+  }
+
+  const themeApi = () => (window as Window & { __khcTheme?: ThemeApi }).__khcTheme;
+  const crtApi = () => (window as Window & { __khcCrt?: CrtApi }).__khcCrt;
+
+  interface Nav {
+    toggle: HTMLButtonElement;
+    menu: HTMLElement;
+    header: HTMLElement;
+  }
+  let nav: Nav | null = null;
+  let popoverEl: HTMLElement | null = null;
+  let topBtnEl: HTMLButtonElement | null = null;
+  const headerWindow = window as Window & {
+    __khcHeaderEventsBound?: boolean;
+    __khcCellControlEventsBound?: boolean;
+  };
+
+  const isMenuOpen = () => nav?.toggle.getAttribute('aria-expanded') === 'true';
+  const setMenuOpen = (open: boolean) => {
+    if (!nav) return;
+    nav.toggle.setAttribute('aria-expanded', String(open));
+    nav.toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    nav.menu.hidden = !open;
+  };
+
+  const isPopoverOpen = () => topBtnEl?.getAttribute('aria-expanded') === 'true';
+  const setPopoverOpen = (open: boolean) => {
+    if (!popoverEl || !topBtnEl) return;
+    popoverEl.hidden = !open;
+    topBtnEl.setAttribute('aria-expanded', String(open));
+  };
+
+  function syncHeaderThemeIcons() {
+    const currentTheme = themeApi()?.get() || document.documentElement.dataset.theme || 'light';
+    const currentCrt = crtApi()?.get() || document.documentElement.dataset.crtMode || 'off';
+    const isCrt = currentCrt === 'amber' || currentCrt === 'green' || currentCrt === 'cyan';
+
+    const topBtn = document.querySelector<HTMLButtonElement>('[data-top-theme-btn]');
+    const crtBadge = document.querySelector<HTMLElement>('[data-top-crt-badge]');
+    if (topBtn) {
+      topBtn.dataset.themeState = currentTheme;
+      topBtn.dataset.crtActive = String(isCrt);
+      if (crtBadge) {
+        crtBadge.textContent =
+          currentCrt === 'amber'
+            ? '⚡'
+            : currentCrt === 'green'
+              ? '🟢'
+              : currentCrt === 'cyan'
+                ? '🔷'
+                : '';
+      }
+    }
+
+    document.querySelectorAll<HTMLButtonElement>('[data-theme-choice]').forEach((btn) => {
+      const choice = btn.dataset.themeChoice;
+      const isActive = !isCrt && choice === currentTheme;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-checked', String(isActive));
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('[data-crt-choice]').forEach((btn) => {
+      const choice = btn.dataset.crtChoice;
+      const isActive = isCrt && choice === currentCrt;
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-checked', String(isActive));
+      btn.disabled = !isCrt;
+    });
+    document.querySelectorAll<HTMLButtonElement>('[data-crt-switch]').forEach((btn) => {
+      btn.setAttribute('aria-checked', String(isCrt));
+      btn.classList.toggle('is-on', isCrt);
+      const label = btn.querySelector('[data-crt-switch-text]');
+      if (label) label.textContent = isCrt ? 'On' : 'Off';
+    });
+    document.querySelectorAll<HTMLElement>('[data-crt-colors]').forEach((row) => {
+      row.classList.toggle('is-disabled', !isCrt);
+    });
+  }
+
+
+
+  function bind() {
+    const toggle = document.querySelector<HTMLButtonElement>('.nav-toggle');
+    const menu = document.querySelector<HTMLElement>('#mobile-menu');
+    const header = document.querySelector<HTMLElement>('.site-header');
+    if (toggle && menu && header) {
+      nav = { toggle, menu, header };
+      if (toggle.dataset.navBound !== 'true') {
+        toggle.dataset.navBound = 'true';
+        toggle.addEventListener('click', () => setMenuOpen(!isMenuOpen()));
+      }
+    }
+
+    topBtnEl = document.querySelector<HTMLButtonElement>('[data-top-theme-btn]');
+    popoverEl = document.querySelector<HTMLElement>('[data-top-theme-popover]');
+
+    if (topBtnEl && topBtnEl.dataset.popoverBound !== 'true') {
+      topBtnEl.dataset.popoverBound = 'true';
+      topBtnEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setPopoverOpen(!isPopoverOpen());
+      });
+    }
+
+    // Bind choice clicks across top popover and mobile drawer
+    document.querySelectorAll<HTMLButtonElement>('[data-theme-choice]').forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const choice = btn.dataset.themeChoice;
+        if (choice) {
+          themeApi()?.set(choice);
+          setPopoverOpen(false);
+        }
+      };
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('[data-crt-choice]').forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const choice = btn.dataset.crtChoice;
+        if (choice) {
+          crtApi()?.set(choice);
+          syncHeaderThemeIcons();
+          setPopoverOpen(false);
+        }
+      };
+    });
+
+    document.querySelectorAll<HTMLButtonElement>('[data-crt-switch]').forEach((btn) => {
+      btn.onclick = (event) => {
+        event.stopPropagation();
+        crtApi()?.toggle();
+        syncHeaderThemeIcons();
+      };
+    });
+
+
+  }
+
+  function handleHeaderKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      if (isPopoverOpen()) {
+        setPopoverOpen(false);
+        topBtnEl?.focus();
+      }
+      if (isMenuOpen()) {
+        setMenuOpen(false);
+        nav?.toggle.focus();
+      }
+    }
+  }
+
+  function handleOutsideClick(e: MouseEvent) {
+    const target = e.target as Node;
+    if (isPopoverOpen() && !popoverEl?.contains(target) && !topBtnEl?.contains(target)) {
+      setPopoverOpen(false);
+    }
+    if (isMenuOpen() && !nav?.header.contains(target)) {
+      setMenuOpen(false);
+    }
+  }
+
+  function handleDesktopLayout(e: MediaQueryListEvent) {
+    if (e.matches) setMenuOpen(false);
+  }
+
+  function closeHeaderMenus() {
+    setMenuOpen(false);
+    setPopoverOpen(false);
+  }
+
+  function updateActiveNav() {
+    const currentPath = location.pathname;
+    for (const a of document.querySelectorAll<HTMLAnchorElement>(
+      '.nav-desktop a, .mobile-menu a'
+    )) {
+      const href = a.getAttribute('href') || '';
+      if (!href.startsWith('/')) continue;
+      const active =
+        href === '/' ? currentPath === '/' : currentPath.startsWith(href.replace(/\/$/, ''));
+      if (active) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
+    }
+  }
+
+  function handleHeaderPageLoad() {
+    bind();
+    updateActiveNav();
+  }
+
+  if (!headerWindow.__khcHeaderEventsBound) {
+    headerWindow.__khcHeaderEventsBound = true;
+    headerWindow.__khcCellControlEventsBound = true;
+    document.addEventListener('keydown', handleHeaderKeydown);
+    document.addEventListener('click', handleOutsideClick);
+    window.matchMedia('(min-width: 960px)').addEventListener('change', handleDesktopLayout);
+    document.addEventListener('astro:before-swap', closeHeaderMenus);
+    document.addEventListener('khc:theme-change', syncHeaderThemeIcons);
+    document.addEventListener('khc:crt-change', syncHeaderThemeIcons);
+    document.addEventListener('astro:page-load', handleHeaderPageLoad);
+  }
+
+  bind();
+  updateActiveNav();
+</script>

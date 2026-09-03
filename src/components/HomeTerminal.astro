@@ -1,0 +1,180 @@
+---
+import { getCollection } from 'astro:content';
+import { site, identity } from '../data/site';
+import { software } from '../data/cv';
+import TerminalKeybar from './TerminalKeybar.astro';
+import '../styles/terminal.css';
+
+const [publications, research, talks] = await Promise.all([
+  getCollection('publications'),
+  getCollection('research'),
+  getCollection('presentations'),
+]);
+
+const newest = [...publications].sort((a, b) => b.data.date.getTime() - a.data.date.getTime())[0];
+const tools = software
+  .slice()
+  .sort((a, b) => b.date.localeCompare(a.date))
+  .slice(0, 4)
+  .map((t) => t.name.toLowerCase().replace(/\s+/g, '-'));
+
+const demo = [
+  { cmd: 'whoami', out: [site.name, `${identity.jobTitle}, ${identity.worksFor.name}`] },
+  { cmd: 'ls ~/software', out: [tools.join('   ')] },
+  {
+    cmd: 'ask what do you work on?',
+    out: [
+      `${identity.knowsAbout.slice(0, 3).join(', ').toLowerCase()},`,
+      `across ${publications.length} papers and ${research.length} research areas.`
+    ],
+  },
+  {
+    cmd: 'cat ~/publications/latest',
+    out: [
+      newest.data.title.length > 58 ? `${newest.data.title.slice(0, 58)}…` : newest.data.title,
+      `${newest.data.venue} · ${newest.data.date.getUTCFullYear()}`,
+    ],
+  },
+];
+
+const boot = {
+  identity: {
+    name: site.name,
+    role: site.role,
+    jobTitle: identity.jobTitle,
+    worksFor: identity.worksFor.name,
+    alumniOf: identity.alumniOf.map((a) => a.name),
+    knowsAbout: identity.knowsAbout,
+    tagline: site.tagline,
+    bio: site.bio,
+  },
+  stats: { publications: publications.length, research: research.length, talks: talks.length },
+};
+---
+<div class="term-shell">
+<section
+  class="term term--inline"
+  data-terminal
+  data-terminal-boot={JSON.stringify(boot)}
+  data-terminal-demo={JSON.stringify(demo)}
+  aria-label="Interactive terminal"
+>
+  <div class="term-bar" data-terminal-bar>
+    <button
+      class="term-dot term-dot--close"
+      type="button"
+      data-terminal-close
+      aria-label="Close the terminal"
+      title="Close the terminal"></button>
+    <button
+      class="term-dot term-dot--min"
+      type="button"
+      data-terminal-min
+      aria-expanded="true"
+      aria-label="Minimise the terminal"
+      title="Minimise the terminal"></button>
+    <a
+      class="term-dot term-dot--zoom"
+      href="/terminal/"
+      aria-label="Open the full-screen terminal"
+      title="Open full screen"></a>
+    <a class="term-bar-open" href="/terminal/">⤢ full screen</a>
+  </div>
+
+  <div class="term-screen-wrap">
+    <div
+      class="term-screen"
+      data-terminal-screen
+      role="log"
+      aria-live="off"
+      aria-busy="false"
+      aria-label="Terminal output"
+      aria-describedby="home-term-help"
+      tabindex="0"
+    ></div>
+    <button
+      class="term-scroll-latest"
+      type="button"
+      data-terminal-scroll-end
+      aria-label="Jump to the latest terminal output"
+      hidden
+    >↓ latest</button>
+  </div>
+
+  <TerminalKeybar />
+
+  <form class="term-form" data-terminal-form>
+    <label class="visually-hidden" for="home-term-input">Terminal command</label>
+    <div class="term-input-wrap">
+      <input
+        class="term-input"
+        id="home-term-input"
+        data-terminal-input
+        type="text"
+        autocomplete="off"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+        aria-describedby="home-term-help"
+        enterkeyhint="go"
+      />
+      <button
+        class="term-input-clear"
+        type="button"
+        data-terminal-input-clear
+        aria-label="Clear input text"
+        title="Clear input"
+        hidden
+      >✕</button>
+    </div>
+    <button
+      class="term-submit-btn"
+      type="submit"
+      data-terminal-submit
+      aria-label="Run command"
+      title="Run command"
+    >↵</button>
+  </form>
+
+  <div class="term-foot">
+    <span id="home-term-help" class="term-foot-try">
+      type <code>help</code> <code>ls</code> <code>grep</code> <code>ask</code>
+      <span class="visually-hidden">
+        Scroll output with a mouse wheel, trackpad, or swipe. Press Shift-PageUp or Shift-PageDown to move through history. Tab completes commands; the arrow keys move through command history.
+      </span>
+    </span>
+    <a class="term-foot-open" href="/terminal/">open full shell →</a>
+  </div>
+</section>
+
+<button class="term-reopen" type="button" data-terminal-reopen hidden>
+  <span aria-hidden="true">$</span> terminal — click to reopen
+</button>
+</div>
+
+<script>
+  import { initTerminal, type TerminalController, type DemoStep } from '../scripts/terminal';
+
+  let controller: TerminalController | null = null;
+
+  function mount() {
+    if (controller) return;
+    const host = document.querySelector<HTMLElement>('[data-terminal][data-terminal-demo]');
+    if (!host) return;
+    let demo: DemoStep[] = [];
+    try {
+      demo = JSON.parse(host.dataset.terminalDemo ?? '[]') as DemoStep[];
+    } catch {
+      demo = [];
+    }
+    controller = initTerminal(document, { boot: false, demo, exitHref: '/terminal/' });
+  }
+  function unmount() {
+    controller?.destroy();
+    controller = null;
+  }
+
+  document.addEventListener('astro:page-load', mount);
+  document.addEventListener('astro:before-swap', unmount);
+  mount();
+</script>
