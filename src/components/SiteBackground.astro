@@ -1,0 +1,513 @@
+---
+/**
+ * Site-wide ambient astronomical background.
+ *
+ * A subtle celestial field for the whole site:
+ * - Sparse stars with very slow twinkling
+ * - Minimal drifting motion
+ * - Occasional soft cross-shaped stars
+ * - No cursor interaction, particles, data streams, or binary glyphs
+ *
+ * Honors prefers-reduced-motion, pauses when the tab is hidden,
+ * scales DPR <= 1.5, and keeps contrast intentionally low.
+ */
+---
+
+<canvas
+  data-site-bg-canvas
+  aria-hidden="true"
+  transition:persist="site-bg"
+></canvas>
+
+<style>
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  interface SiteBackgroundDebugSnapshot {
+    running: boolean;
+    reduced: boolean;
+    width: number;
+    height: number;
+    dpr: number;
+    renderCount: number;
+    maxFps: number;
+  }
+
+  let instance: {
+    teardown: () => void;
+    snapshot: () => SiteBackgroundDebugSnapshot;
+  } | null = null;
+
+  function setup() {
+    if (instance) return;
+
+    const canvas =
+      document.querySelector<HTMLCanvasElement>(
+        '[data-site-bg-canvas]'
+      );
+
+    const ctx = canvas?.getContext('2d');
+
+    if (!canvas || !ctx) return;
+
+    const reduce = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    );
+
+    const MAX_FPS = 20;
+    const FRAME_INTERVAL = 1000 / MAX_FPS;
+
+    const STAR_COUNT = 52;
+
+    let w = 0;
+    let h = 0;
+    let dpr = 1;
+
+    let raf = 0;
+    let running = false;
+    let lastFrameTime = 0;
+    let renderCount = 0;
+
+    let INK = [35, 35, 35];
+    let ACCENT = [78, 92, 180];
+    let SECONDARY = [145, 125, 205];
+
+    type Star = {
+      x: number;
+      y: number;
+      size: number;
+      opacity: number;
+      phase: number;
+      twinkle: number;
+      driftX: number;
+      driftY: number;
+      cross: boolean;
+    };
+
+    let stars: Star[] = [];
+
+    function random(min: number, max: number) {
+      return min + Math.random() * (max - min);
+    }
+
+    function clamp(
+      value: number,
+      min: number,
+      max: number
+    ) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function rgba(
+      rgb: number[],
+      alpha: number
+    ) {
+      return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+    }
+
+    function cssRgb(
+      name: string,
+      fallback: number[]
+    ) {
+      const raw = getComputedStyle(
+        document.documentElement
+      )
+        .getPropertyValue(name)
+        .trim();
+
+      const parts = raw
+        .split(',')
+        .map((part) => Number(part.trim()));
+
+      return parts.length === 3 &&
+        parts.every(Number.isFinite)
+        ? parts
+        : fallback;
+    }
+
+    function refreshPalette() {
+      INK = cssRgb(
+        '--rgb-ink',
+        [35, 35, 35]
+      );
+
+      ACCENT = cssRgb(
+        '--rgb-accent',
+        [78, 92, 180]
+      );
+
+      SECONDARY = [
+        Math.min(
+          255,
+          ACCENT[0] + 55
+        ),
+        Math.min(
+          255,
+          ACCENT[1] + 35
+        ),
+        Math.min(
+          255,
+          ACCENT[2] + 35
+        ),
+      ];
+
+      draw(0);
+    }
+
+    function createStars() {
+      stars = Array.from(
+        { length: STAR_COUNT },
+        () => ({
+          x: random(0.015, 0.985),
+          y: random(0.015, 0.985),
+
+          size: random(0.35, 1.35),
+
+          opacity: random(
+            0.08,
+            0.26
+          ),
+
+          phase: random(
+            0,
+            Math.PI * 2
+          ),
+
+          twinkle: random(
+            0.00035,
+            0.001
+          ),
+
+          driftX: random(
+            -0.000012,
+            0.000012
+          ),
+
+          driftY: random(
+            -0.000008,
+            0.000008
+          ),
+
+          cross:
+            Math.random() > 0.86,
+        })
+      );
+    }
+
+    function resize() {
+      w = window.innerWidth;
+      h = window.innerHeight;
+
+      dpr = Math.min(
+        window.devicePixelRatio || 1,
+        1.5
+      );
+
+      canvas!.width = Math.round(
+        w * dpr
+      );
+
+      canvas!.height = Math.round(
+        h * dpr
+      );
+
+      ctx!.setTransform(
+        dpr,
+        0,
+        0,
+        dpr,
+        0,
+        0
+      );
+
+      draw(0);
+    }
+
+    function draw(tick: number) {
+      renderCount++;
+
+      ctx!.clearRect(
+        0,
+        0,
+        w,
+        h
+      );
+
+      for (const star of stars) {
+        const x =
+          ((star.x +
+            Math.sin(
+              tick * star.driftX +
+                star.phase
+            ) *
+              0.0008 +
+            1) %
+            1) *
+          w;
+
+        const y =
+          ((star.y +
+            Math.cos(
+              tick * star.driftY +
+                star.phase
+            ) *
+              0.0006 +
+            1) %
+            1) *
+          h;
+
+        const twinkle =
+          Math.sin(
+            tick * star.twinkle +
+              star.phase
+          ) * 0.035;
+
+        const alpha = clamp(
+          star.opacity +
+            twinkle,
+          0.035,
+          0.32
+        );
+
+        ctx!.fillStyle = rgba(
+          SECONDARY,
+          alpha
+        );
+
+        ctx!.beginPath();
+
+        ctx!.arc(
+          x,
+          y,
+          star.size,
+          0,
+          Math.PI * 2
+        );
+
+        ctx!.fill();
+
+        if (
+          star.cross &&
+          star.size > 0.85
+        ) {
+          const length =
+            star.size * 3.2;
+
+          ctx!.strokeStyle = rgba(
+            SECONDARY,
+            alpha * 0.38
+          );
+
+          ctx!.lineWidth = 0.45;
+
+          ctx!.beginPath();
+
+          ctx!.moveTo(
+            x - length,
+            y
+          );
+
+          ctx!.lineTo(
+            x + length,
+            y
+          );
+
+          ctx!.moveTo(
+            x,
+            y - length
+          );
+
+          ctx!.lineTo(
+            x,
+            y + length
+          );
+
+          ctx!.stroke();
+        }
+      }
+    }
+
+    function frame(time: number) {
+      if (!running) return;
+
+      raf =
+        requestAnimationFrame(
+          frame
+        );
+
+      if (
+        lastFrameTime === 0
+      ) {
+        lastFrameTime =
+          time -
+          FRAME_INTERVAL;
+      }
+
+      const elapsed =
+        time - lastFrameTime;
+
+      if (
+        elapsed <
+        FRAME_INTERVAL
+      ) {
+        return;
+      }
+
+      lastFrameTime =
+        time -
+        (elapsed %
+          FRAME_INTERVAL);
+
+      draw(time);
+    }
+
+    function start() {
+      if (
+        running ||
+        reduce.matches ||
+        document.hidden
+      ) {
+        return;
+      }
+
+      running = true;
+      lastFrameTime = 0;
+
+      raf =
+        requestAnimationFrame(
+          frame
+        );
+    }
+
+    function stop() {
+      running = false;
+
+      cancelAnimationFrame(
+        raf
+      );
+
+      raf = 0;
+      lastFrameTime = 0;
+    }
+
+    const onVisibilityChange =
+      () => {
+        if (document.hidden) {
+          stop();
+        } else {
+          start();
+        }
+      };
+
+    const onReduceChange =
+      () => {
+        if (reduce.matches) {
+          stop();
+          draw(0);
+        } else {
+          start();
+        }
+      };
+
+    const onThemeChange =
+      () => {
+        refreshPalette();
+      };
+
+    window.addEventListener(
+      'resize',
+      resize
+    );
+
+    document.addEventListener(
+      'visibilitychange',
+      onVisibilityChange
+    );
+
+    document.addEventListener(
+      'khc:theme-change',
+      onThemeChange
+    );
+
+    reduce.addEventListener(
+      'change',
+      onReduceChange
+    );
+
+    createStars();
+
+    refreshPalette();
+    resize();
+
+    if (!reduce.matches) {
+      start();
+    }
+
+    const snapshot =
+      (): SiteBackgroundDebugSnapshot => ({
+        running,
+        reduced:
+          reduce.matches,
+        width: w,
+        height: h,
+        dpr,
+        renderCount,
+        maxFps: MAX_FPS,
+      });
+
+    instance = {
+      snapshot,
+
+      teardown() {
+        stop();
+
+        window.removeEventListener(
+          'resize',
+          resize
+        );
+
+        document.removeEventListener(
+          'visibilitychange',
+          onVisibilityChange
+        );
+
+        document.removeEventListener(
+          'khc:theme-change',
+          onThemeChange
+        );
+
+        reduce.removeEventListener(
+          'change',
+          onReduceChange
+        );
+
+        stars = [];
+      },
+    };
+  }
+
+  function cleanup() {
+    instance?.teardown();
+    instance = null;
+  }
+
+  setup();
+
+  document.addEventListener(
+    'astro:page-load',
+    setup
+  );
+
+  document.addEventListener(
+    'astro:before-swap',
+    cleanup
+  );
+</script>

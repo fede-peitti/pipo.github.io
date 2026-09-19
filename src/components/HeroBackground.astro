@@ -52,12 +52,12 @@
     const MAX_FPS = 24;
     const FRAME_INTERVAL = 1000 / MAX_FPS;
 
-    const PARTICLE_COUNT = coarse.matches ? 42 : 68;
-    const TRAIL_LENGTH = coarse.matches ? 34 : 52;
+    const PARTICLE_COUNT = coarse.matches ? 28 : 42;
+    const TRAIL_LENGTH = coarse.matches ? 24 : 36;
 
-    const FLOW_SPEED = coarse.matches ? 0.002 : 0.003;
+    const FLOW_SPEED = coarse.matches ? 0.0005 : 0.0008;
     const CURSOR_EASE = 0.055;
-    const IDLE_EASE = 0.018;
+    const IDLE_EASE = 0.012;
 
     const STAR_COUNT = coarse.matches ? 34 : 58;
     const BINARY_COUNT = coarse.matches ? 18 : 32;
@@ -183,11 +183,11 @@
     function createParticles() {
       particles = Array.from({ length: PARTICLE_COUNT }, () => ({
         offset: random(0, Math.PI * 2),
-        spread: random(0.15, 1),
-        speed: random(0.65, 1.35),
+        spread: random(0.1, 0.7),
+        speed: random(0.75, 1.15),
         size: random(PARTICLE_MIN_SIZE, PARTICLE_MAX_SIZE),
         phase: random(0, Math.PI * 2),
-        opacity: random(0.18, 0.7),
+        opacity: random(0.16, 0.55),
       }));
     }
 
@@ -202,38 +202,27 @@
       }));
     }
 
-    function createBinary() {
-      binary = Array.from({ length: BINARY_COUNT }, () => ({
-        x: random(0.04, 0.96),
-        y: random(0.1, 0.9),
-        value: Math.random() > 0.5 ? '01' : '10',
-        size: random(8, 13),
-        opacity: random(0.12, 0.34),
-        phase: random(0, Math.PI * 2),
-        drift: random(0.4, 1.2),
-      }));
-    }
 
     function flowPoint(t: number, spread = 0): Point {
       const centerX = w * 0.58;
 
-      const amplitude = w * 0.28;
+      const amplitude = w * 0.22;
       const wave = Math.sin(t * Math.PI * 2.1) * amplitude;
 
-      const vertical = h * 0.16;
+      const vertical = h * 0.12;
       const y = h * 0.5 + (t - 0.5) * h * 0.75;
 
       const x =
         centerX +
         wave +
-        Math.sin(t * Math.PI * 5 + tick * 0.002) *
+        Math.sin(t * Math.PI * 5 + tick * 0.0008) *
           spread *
           w *
-          0.08;
+          0.05;
 
       return {
         x,
-        y: y + Math.cos(t * Math.PI * 3 + tick * 0.0015) * spread * vertical,
+        y: y + Math.cos(t * Math.PI * 3 + tick * 0.0006) * spread * vertical,
       };
     }
 
@@ -365,10 +354,10 @@
 
         ctx!.strokeStyle = rgba(
           lineColor,
-          line === 1 ? 0.16 : 0.07
+          line === 1 ? 0.13 : 0.055
         );
 
-        ctx!.lineWidth = line === 1 ? 1.1 : 0.7;
+        ctx!.lineWidth = line === 1 ? 1 : 0.7;
         ctx!.stroke();
       }
 
@@ -380,15 +369,15 @@
 
         const point = flowPoint(
           t,
-          Math.sin(particle.phase + tick * 0.002) *
+          Math.sin(particle.phase + tick * 0.0008) *
             particle.spread
         );
 
         const tangent = flowTangent(t);
 
         const pulse =
-          0.75 +
-          Math.sin(tick * 0.025 + particle.phase) * 0.25;
+          0.82 +
+          Math.sin(tick * 0.018 + particle.phase) * 0.18;
 
         const colorAmount = clamp(
           t * 1.2,
@@ -422,14 +411,14 @@
         if (particle.opacity > 0.48) {
           ctx!.strokeStyle = rgba(
             color,
-            alpha * 0.45
+            alpha * 0.35
           );
           ctx!.lineWidth = 0.7;
 
           ctx!.beginPath();
           ctx!.moveTo(
-            point.x - tangent.x * 7,
-            point.y - tangent.y * 7
+            point.x - tangent.x * 6,
+            point.y - tangent.y * 6
           );
           ctx!.lineTo(point.x, point.y);
           ctx!.stroke();
@@ -516,19 +505,18 @@
       );
       gradient.addColorStop(
         0.55,
-        rgba(ACCENT, 0.035)
+        rgba(ACCENT, 0.025)
       );
       gradient.addColorStop(
         1,
-        rgba(SECONDARY, pointer.active ? 0.22 : 0.09)
+        rgba(SECONDARY, pointer.active ? 0.18 : 0.07)
       );
 
       ctx!.strokeStyle = gradient;
-      ctx!.lineWidth = pointer.active ? 2 : 1;
+      ctx!.lineWidth = pointer.active ? 1.6 : 0.8;
       ctx!.lineCap = 'round';
       ctx!.stroke();
     }
-
 
     function drawTextClearance() {
       if (!textEl) return;
@@ -593,7 +581,6 @@
       ctx!.restore();
     }
 
-
     function draw(trailMode: boolean) {
       renderCount++;
 
@@ -623,11 +610,11 @@
       } else {
         targetX =
           w * 0.58 +
-          Math.sin(tick * 0.004) * w * 0.16;
+          Math.sin(tick * 0.0018) * w * 0.10;
 
         targetY =
           h * 0.5 +
-          Math.cos(tick * 0.003) * h * 0.22;
+          Math.cos(tick * 0.0014) * h * 0.14;
       }
 
       const ease =
@@ -709,7 +696,6 @@
       raf = 0;
       lastFrameTime = 0;
     }
-
 
     const onPointerMove = (event: PointerEvent) => {
       const rect =
@@ -821,7 +807,6 @@
 
     createParticles();
     createStars();
-    createBinary();
 
     refreshPalette();
     resize();

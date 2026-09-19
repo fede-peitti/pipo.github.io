@@ -1,0 +1,106 @@
+---
+import Icon from './Icon.astro';
+interface Props {
+  eyebrow?: string;
+  title: string;
+  href?: string;
+  more?: string;
+}
+const { eyebrow, title, href, more = 'View all' } = Astro.props;
+---
+<div class="section-heading" data-pulse>
+  <div>
+    {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+    <h2>{title}</h2>
+  </div>
+  {
+    href && (
+      <a class="more-link" href={href}>
+        {more}
+        <Icon name="arrow-right" size={18} />
+      </a>
+    )
+  }
+</div>
+
+<style>
+  .section-heading {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: var(--space-8);
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .section-heading::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background-image: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+    background-repeat: no-repeat;
+    background-size: 40% 100%;
+    background-position: -40% 0;
+    opacity: 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .section-heading.is-pulsed::after {
+      animation: seg-pulse 1.1s ease-out 1;
+    }
+  }
+  @keyframes seg-pulse {
+    0% {
+      background-position: -40% 0;
+      opacity: 0;
+    }
+    15% {
+      opacity: 1;
+    }
+    85% {
+      opacity: 1;
+    }
+    100% {
+      background-position: 140% 0;
+      opacity: 0;
+    }
+  }
+  .section-heading h2 {
+    margin-top: 0.4rem;
+  }
+  .more-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex: none;
+    font-size: var(--fs-small);
+    font-weight: var(--fw-medium);
+    color: var(--color-ink);
+    white-space: nowrap;
+  }
+  .more-link:hover {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  .more-link :global(svg) {
+    transition: transform var(--transition);
+  }
+  .more-link:hover :global(svg) {
+    transform: translateX(3px);
+  }
+  @media (max-width: 620px) {
+    .section-heading {
+      margin-bottom: var(--space-6);
+      padding-bottom: var(--space-4);
+    }
+  }
+  @media (max-width: 520px) {
+    .section-heading {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
