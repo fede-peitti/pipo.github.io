@@ -1,0 +1,69 @@
+<div class="pagescan" data-pagescan aria-hidden="true" transition:persist="pagescan"></div>
+
+<style>
+  .pagescan {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .pagescan::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--color-accent), transparent);
+    box-shadow: 0 0 12px 2px color-mix(in srgb, var(--color-accent) 40%, transparent);
+    transform: translateY(-4px);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .pagescan.is-scanning {
+      opacity: 1;
+    }
+    .pagescan.is-scanning::before {
+      animation: pagescan-sweep 0.45s ease-out 1;
+    }
+  }
+  @keyframes pagescan-sweep {
+    0% {
+      transform: translateY(-4px);
+      opacity: 0;
+    }
+    12% {
+      opacity: 1;
+    }
+    88% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh);
+      opacity: 0;
+    }
+  }
+</style>
+
+<script>
+  const scanEl = () => document.querySelector<HTMLElement>('[data-pagescan]');
+
+  function bind() {
+    const el = scanEl();
+    if (!el || el.dataset.scanBound === 'true') return;
+    el.dataset.scanBound = 'true';
+    el.addEventListener('animationend', () => el.classList.remove('is-scanning'));
+  }
+
+  document.addEventListener('astro:before-swap', () => {
+    const el = scanEl();
+    if (!el) return;
+    el.classList.remove('is-scanning');
+    // Force reflow
+    void el.offsetWidth;
+    el.classList.add('is-scanning');
+  });
+
+  bind();
+  document.addEventListener('astro:page-load', bind);
+</script>

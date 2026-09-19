@@ -1,0 +1,25 @@
+---
+import katex from 'katex';
+
+interface Props {
+  tex: string;
+  display?: boolean;
+  class?: string;
+}
+
+const { tex, display = false, class: className = '' } = Astro.props;
+
+const html = katex.renderToString(tex, {
+  displayMode: display,
+  throwOnError: false,
+  strict: false,
+});
+---
+
+{
+  display ? (
+    <div class={`katex-wrap katex-wrap--display ${className}`} set:html={html} />
+  ) : (
+    <span class={`katex-wrap katex-wrap--inline ${className}`} set:html={html} />
+  )
+}
