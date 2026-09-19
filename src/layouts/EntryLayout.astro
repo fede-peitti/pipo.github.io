@@ -1,0 +1,164 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import ShareTools from '../components/ShareTools.astro';
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import type { RelatedPostLink } from '../lib/relatedPosts';
+import type { ScholarMeta } from '../lib/scholar';
+
+interface LinkItem {
+  label: string;
+  icon: string;
+  href: string;
+}
+interface Props {
+  title: string;
+  eyebrow?: string;
+  authors?: string[];
+  meta?: string[];
+  backHref: string;
+  backLabel: string;
+  links?: LinkItem[];
+  relatedPosts?: RelatedPostLink[];
+  description?: string;
+  image?: string;
+  logo?: ImageMetadata;
+  noindex?: boolean;
+  scholarMeta?: ScholarMeta;
+  share?: { url: string; title: string; feedHref: string };
+}
+const {
+  title,
+  eyebrow,
+  authors = [],
+  meta = [],
+  backHref,
+  backLabel,
+  links = [],
+  relatedPosts = [],
+  description,
+  image,
+  logo,
+  noindex,
+  scholarMeta,
+  share,
+} = Astro.props;
+---
+<BaseLayout
+  title={title}
+  description={description}
+  image={image}
+  type="article"
+  noindex={noindex}
+  scholarMeta={scholarMeta}
+>
+  <article class="entry">
+    <div class="container container--narrow">
+      <a class="back" href={backHref}>
+        <Icon name="arrow-right" size={16} class="flip" />
+        {backLabel}
+      </a>
+
+      {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+      {logo && <Image class="entry-logo" src={logo} alt="" height={160} />}
+      <h1>{title}</h1>
+      {
+        authors.length > 0 && (
+          <p class="entry-authors">
+            By {authors.join(', ')}
+          </p>
+        )
+      }
+
+      {
+        meta.length > 0 && (
+          <p class="entry-meta muted">{meta.join(' · ')}</p>
+        )
+      }
+
+      {
+        (links.length > 0 || relatedPosts.length > 0) && (
+          <div class="entry-links">
+            {links.map((l) => (
+              <a class="btn" href={l.href} target="_blank" rel="noopener noreferrer">
+                <Icon name={l.icon} size={16} />
+                {l.label}
+              </a>
+            ))}
+            {relatedPosts.map((b) => (
+              <a
+                class="btn"
+                href={b.href}
+                title={b.title}
+                aria-label={`Read the blog post: ${b.title}`}
+              >
+                <Icon name="pencil" size={16} />
+                {b.label}
+              </a>
+            ))}
+          </div>
+        )
+      }
+
+      <div class="entry-body">
+        <slot />
+      </div>
+
+      {share && <ShareTools url={share.url} title={share.title} feedHref={share.feedHref} />}
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .entry {
+    padding-top: clamp(2rem, 5vw, 3.5rem);
+    padding-bottom: clamp(1.75rem, 3vw, 2.5rem);
+  }
+  .back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: var(--fs-small);
+    color: var(--color-muted);
+    margin-bottom: 2rem;
+  }
+  .back:hover {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  .back :global(.flip) {
+    transform: rotate(180deg);
+  }
+  .entry-logo {
+    display: block;
+    height: clamp(3.5rem, 7vw, 4.75rem);
+    width: auto;
+    max-width: 340px;
+    object-fit: contain;
+    margin-bottom: 0.9rem;
+  }
+  h1 {
+    margin-top: 0.6rem;
+  }
+  .entry-meta {
+    margin-top: 1rem;
+    font-size: var(--fs-small);
+  }
+  .entry-authors {
+    margin-top: 0.9rem;
+    font-size: var(--fs-small);
+    color: var(--color-ink);
+  }
+  .entry-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .entry-body {
+    margin-top: 2.5rem;
+  }
+</style>

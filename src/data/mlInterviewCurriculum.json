@@ -1,0 +1,12 @@
+{
+  "hub": "ml-dl-interview",
+  "totalQuestions": 351,
+  "rapidLessonCount": 10,
+  "rapidQuestionCount": 72,
+  "lessons": [
+    { "id": "ml-interview-linear-algebra-calculus", "questionCount": 15 },
+    { "id": "ml-interview-probability-statistics", "questionCount": 18 },
+    { "id": "ml-interview-learning-theory-generalization", "questionCount": 14 },
+    { "id": "ml-interview-data-features-validation", "questionCount": 16 }
+  ]
+}
