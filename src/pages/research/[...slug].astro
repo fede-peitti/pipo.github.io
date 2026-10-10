@@ -1,0 +1,129 @@
+---
+import { getCollection, render } from 'astro:content';
+import EntryLayout from '../../layouts/EntryLayout.astro';
+import Prose from '../../components/Prose.astro';
+import ResearchWorkList from '../../components/ResearchWorkList.astro';
+import { resolveRelatedPosts } from '../../lib/relatedPosts';
+import { referenceLabel, referenceUrl } from '../../lib/scholar';
+import { site } from '../../data/site';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('research');
+  return entries.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const d = entry.data;
+const { Content } = await render(entry);
+const relatedPosts = await resolveRelatedPosts(d.relatedPosts.map((r) => r.id));
+const publicationsById = new Map(
+  (await getCollection('publications')).map((item) => [item.id, item])
+);
+const contributions = d.relatedPublications.flatMap(({ publication, note, resourceLabel }) => {
+  const related = publicationsById.get(publication.id);
+  return related ? [{ entry: related, note, resourceLabel }] : [];
+});
+const paperContributions = contributions.some(({ resourceLabel }) => resourceLabel)
+  ? contributions.filter(({ resourceLabel }) => resourceLabel)
+  : contributions.slice(0, 1);
+const paperLinks = paperContributions.flatMap(({ entry, resourceLabel }) => {
+  const href = entry.data.doi ?? entry.data.pdf;
+  return href ? [{ label: resourceLabel ?? 'Paper', icon: 'link', href }] : [];
+});
+const primaryPublication = contributions[0]?.entry.data;
+const links = [
+  ...paperLinks,
+  { label: 'Code', icon: 'code', href: primaryPublication?.code },
+  { label: 'Docs', icon: 'book', href: primaryPublication?.docs },
+  { label: 'Data', icon: 'database', href: primaryPublication?.data },
+  { label: 'Slides', icon: 'slides', href: primaryPublication?.slides },
+  { label: 'News', icon: 'external', href: primaryPublication?.news },
+  { label: 'Talk', icon: 'play', href: primaryPublication?.video },
+].filter((link): link is { label: string; icon: string; href: string } => Boolean(link.href));
+
+const canonical = new URL(`/research/${entry.id}/`, site.url).href;
+const breadcrumbLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: `${site.url}/` },
+    { '@type': 'ListItem', position: 2, name: 'Research', item: `${site.url}/research/` },
+    { '@type': 'ListItem', position: 3, name: d.title, item: canonical },
+  ],
+};
+---
+
+<EntryLayout
+  title={d.title}
+  eyebrow={d.area}
+  backHref="/research/"
+  backLabel="All research"
+  description={d.summary}
+  links={links}
+  relatedPosts={relatedPosts}
+>
+  <Prose>
+    <Content />
+  </Prose>
+
+  <ResearchWorkList contributions={contributions} posts={relatedPosts} />
+
+  {
+    d.references.length > 0 && (
+      <section class="research-references">
+        <h2>References</h2>
+        <ol>
+          {d.references.map((ref) => (
+            <li>
+              <span>{ref.text}</span>
+              {referenceUrl(ref) && (
+                <>
+                  {' '}
+                  <a href={referenceUrl(ref)} target="_blank" rel="noopener noreferrer">
+                    {referenceLabel(ref)}
+                  </a>
+                </>
+              )}
+            </li>
+          ))}
+        </ol>
+      </section>
+    )
+  }
+
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbLd)} />
+</EntryLayout>
+
+<style>
+  .research-motif {
+    height: clamp(130px, 26vw, 190px);
+    margin-bottom: 2rem;
+    padding: 0.75rem 1rem;
+    background: color-mix(in srgb, var(--color-accent) 6%, var(--color-bg));
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-lg);
+  }
+  .research-references {
+    max-width: var(--measure);
+    margin-top: var(--space-12);
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--color-rule);
+  }
+  .research-references h2 {
+    margin-bottom: var(--space-4);
+    font-size: var(--fs-h3);
+    letter-spacing: 0;
+  }
+  .research-references ol {
+    padding-left: 1.35rem;
+    color: var(--color-muted);
+    font-size: var(--fs-small);
+  }
+  .research-references li + li {
+    margin-top: 0.65rem;
+  }
+  .research-references a {
+    font-weight: var(--fw-medium);
+    white-space: nowrap;
+  }
+</style>

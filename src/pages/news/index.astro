@@ -1,0 +1,18 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '../../layouts/PageLayout.astro';
+import NewsList from '../../components/NewsList.astro';
+
+const news = (await getCollection('news'))
+  .filter((n) => !n.data.draft)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+
+<PageLayout
+  title="News"
+  eyebrow="Updates"
+  lead="Research, projects, teaching, and other milestones."
+  description="News and updates about Fede's life."
+>
+  <NewsList items={news} />
+</PageLayout>
