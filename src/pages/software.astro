@@ -1,0 +1,277 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import Icon from '../components/Icon.astro';
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import { software, sideProjects, type SoftwareTool } from '../data/cv';
+import { resolveRelatedPosts } from '../lib/relatedPosts';
+import { site } from '../data/site';
+
+const logoFiles = import.meta.glob<{ default: ImageMetadata }>('../assets/logos/software/*.png', {
+  eager: true,
+});
+const logoFor = (t: SoftwareTool) =>
+  t.logo ? logoFiles[`../assets/logos/software/${t.logo}.png`]?.default : undefined;
+
+const toolLinks = (t: SoftwareTool) =>
+  [
+    { label: 'Code', icon: 'code', href: t.code },
+    { label: 'Docs', icon: 'book', href: t.docs },
+    { label: 'Paper', icon: 'link', href: t.paper },
+    { label: 'Poster', icon: 'image', href: t.poster },
+  ].filter((l): l is { label: string; icon: string; href: string } => Boolean(l.href));
+
+const tools = [...software].sort((a, b) => b.date.localeCompare(a.date));
+
+const isExternalUrl = (href: string) => /^https?:\/\//.test(href);
+
+const softwareLd = {
+  '@context': 'https://schema.org',
+  '@graph': tools.map((t) => ({
+    '@type': 'SoftwareSourceCode',
+    name: t.name,
+    description: t.blurb,
+    codeRepository: t.code,
+    license: t.license.url,
+    author: { '@id': `${site.url}/#person` },
+    ...(t.docs ? { url: t.docs } : {}),
+  })),
+};
+
+const toolBlog = await Promise.all(tools.map((t) => resolveRelatedPosts(t.posts ?? [])));
+---
+
+<PageLayout
+  title="Software"
+  eyebrow="Open source"
+  lead="Open-source tools."
+  description="Open-source tools."
+>
+  <section class="block">
+    <h2 class="block-title">Research software</h2>
+    <ul class="tools">
+      {
+        tools.map((t, i) => {
+          const links = toolLinks(t);
+          const blogLinks = toolBlog[i];
+          const primary = t.docs ?? t.code;
+          const logo = logoFor(t);
+          return (
+            <li class="tool">
+              <div class="tool-main">
+                <div class="tool-head">
+                  <h3 class="tool-name">
+                    <a href={primary} target="_blank" rel="noopener noreferrer">
+                      {t.name}
+                    </a>
+                  </h3>
+                  <a
+                    class="tool-license"
+                    href={t.license.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {t.license.name}
+                  </a>
+                </div>
+                <p class="tool-blurb muted">{t.blurb}</p>
+                <p class="row-links">
+                  {links.map((l) => (
+                    <a href={l.href} target="_blank" rel="noopener noreferrer">
+                      <Icon name={l.icon} size={15} />
+                      {l.label}
+                    </a>
+                  ))}
+                  {blogLinks.map((b) => (
+                    <a href={b.href} title={b.title} aria-label={`Read the blog post: ${b.title}`}>
+                      <Icon name="pencil" size={15} />
+                      {b.label}
+                    </a>
+                  ))}
+                </p>
+              </div>
+              {logo && (
+                <span class="tool-logo-frame" data-logo={t.logo} aria-hidden="true">
+                  <Image class="tool-logo" src={logo} alt="" height={80} />
+                </span>
+              )}
+            </li>
+          );
+        })
+      }
+    </ul>
+  </section>
+
+  <section class="block">
+    <h2 class="block-title">Side projects</h2>
+    <p class="muted side-intro">
+      A few projects I did/do for fun.
+    </p>
+    <ul class="tools">
+      {
+        sideProjects.map((p) => (
+          <li class="tool">
+            <div class="tool-main">
+              <div class="tool-head">
+                <h3 class="tool-name">
+                  <a
+                    href={p.url}
+                    target={isExternalUrl(p.url) ? '_blank' : undefined}
+                    rel={isExternalUrl(p.url) ? 'noopener noreferrer' : undefined}
+                  >
+                    {p.name}
+                  </a>
+                </h3>
+              </div>
+              <p class="tool-blurb muted">{p.detail}</p>
+              <p class="row-links">
+                <a
+                  href={p.url}
+                  target={isExternalUrl(p.url) ? '_blank' : undefined}
+                  rel={isExternalUrl(p.url) ? 'noopener noreferrer' : undefined}
+                  aria-label={`Explore ${p.name}`}
+                >
+                  <Icon name="play" size={15} />
+                  Explore
+                </a>
+              </p>
+            </div>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(softwareLd)} />
+</PageLayout>
+
+<style>
+  .block {
+    margin-bottom: var(--space-16);
+  }
+  .block-title {
+    font-size: var(--fs-h3);
+    font-weight: var(--fw-semibold);
+    padding-bottom: var(--space-4);
+    margin-bottom: var(--space-2);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .side-intro {
+    margin-top: var(--space-4);
+    font-size: var(--fs-small);
+  }
+  .tools {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .tool {
+    display: flex;
+    align-items: center;
+    gap: 1rem 1.5rem;
+    padding-block: var(--space-5);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .tool-main {
+    flex: 1;
+    min-width: 0;
+  }
+  .tool-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 0.85rem;
+  }
+  .tool-logo-frame {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+  }
+  .tool-logo {
+    height: 2.25rem;
+    width: auto;
+    max-width: 240px;
+    object-fit: contain;
+  }
+  :global(html[data-theme='dark']) .tool-logo-frame {
+    min-width: 4.75rem;
+    min-height: 3.1rem;
+    padding: 0.42rem 0.72rem;
+    border: 1px solid color-mix(in srgb, var(--color-ink) 16%, transparent);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 241, 233, 0.92));
+    box-shadow:
+      0 0.55rem 1.4rem rgba(0, 0, 0, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  }
+  :global(html[data-theme='dark']) .tool-logo-frame[data-logo='shorkie'],
+  :global(html[data-theme='dark']) .tool-logo-frame[data-logo='wgt'] {
+    min-width: 3.4rem;
+  }
+  .tool-name {
+    font-size: 1.15rem;
+    font-weight: var(--fw-semibold);
+  }
+  .tool-name a {
+    color: var(--color-ink);
+  }
+  .tool-name a:hover {
+    color: var(--color-accent);
+  }
+  .tool-license {
+    font-size: var(--fs-meta);
+    padding: 0.25em 0.7em;
+    border: 1px solid var(--color-rule);
+    border-radius: 999px;
+    color: var(--color-muted);
+  }
+  .tool-license:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  .tool-blurb {
+    margin-top: 0.4rem;
+    font-size: var(--fs-small);
+    max-width: var(--measure);
+  }
+  .row-links {
+    margin-top: 0.6rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.1rem;
+    font-size: var(--fs-small);
+  }
+  .row-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--color-accent);
+  }
+  .row-links a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 620px) {
+    .tool {
+      gap: 0.85rem 1rem;
+    }
+    .tool-logo-frame {
+      flex: 0 0 auto;
+    }
+    .tool-logo {
+      height: 1.6rem;
+      max-width: 160px;
+    }
+    :global(html[data-theme='dark']) .tool-logo-frame {
+      min-width: 3.55rem;
+      min-height: 2.45rem;
+      padding: 0.32rem 0.52rem;
+    }
+    :global(html[data-theme='dark']) .tool-logo-frame[data-logo='shorkie'],
+    :global(html[data-theme='dark']) .tool-logo-frame[data-logo='wgt'] {
+      min-width: 2.65rem;
+    }
+  }
+</style>

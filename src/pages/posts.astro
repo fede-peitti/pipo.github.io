@@ -1,0 +1,23 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '../layouts/PageLayout.astro';
+import PostsList from '../components/PostsList.astro';
+
+const posts = (await getCollection('posts'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+<PageLayout
+  title="Posts"
+  eyebrow="Writing"
+  lead="Writing on ideas I am currenyly exploring."
+  description="Some summaries and sketches."
+>
+  {
+    posts.length === 0 ? (
+      <p class="muted">No posts yet — check back soon.</p>
+    ) : (
+      <PostsList posts={posts} />
+    )
+  }
+</PageLayout>

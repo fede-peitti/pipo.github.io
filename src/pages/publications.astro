@@ -1,0 +1,32 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '../layouts/PageLayout.astro';
+import PublicationsList from '../components/PublicationsList.astro';
+
+const pubs = (await getCollection('publications')).sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime()
+);
+---
+<PageLayout
+  title="Publications"
+  eyebrow="Research output"
+  lead="Selected publications."
+  description="Publications."
+>
+  <PublicationsList pubs={pubs} />
+
+  <p class="scholar-note">
+    <!--   
+    <a href="https://scholar.google.com/citations?user=TODO" target="_blank" rel="noopener noreferrer">
+      View all on Google Scholar →
+    </a>
+    -->
+  </p>
+</PageLayout>
+
+<style>
+  .scholar-note {
+    margin-top: var(--space-10);
+    font-size: var(--fs-small);
+  }
+</style>

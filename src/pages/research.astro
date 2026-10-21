@@ -1,0 +1,37 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '../layouts/PageLayout.astro';
+import ResearchCard from '../components/ResearchCard.astro';
+
+const entries = (await getCollection('research')).sort(
+  (a, b) => a.data.order - b.data.order
+);
+---
+<PageLayout
+  title="Research"
+  eyebrow="What I work(ed) on"
+  lead="TODO"
+  description="Research content."
+>
+  <h2 class="research-list-title">Research areas</h2>
+  <div class="research-index">
+    {entries.map((entry) => <ResearchCard entry={entry} variant="index" showPosts />)}
+  </div>
+</PageLayout>
+
+<style>
+  .research-list-title {
+    font-size: var(--fs-h3);
+    font-weight: var(--fw-semibold);
+    letter-spacing: 0;
+    padding-bottom: var(--space-4);
+    margin-bottom: var(--space-4);
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .research-index {
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .research-index :global(.rcard--index:first-child) {
+    border-top: 0;
+  }
+</style>
