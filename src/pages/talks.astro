@@ -1,0 +1,18 @@
+---
+import { getCollection } from 'astro:content';
+import PageLayout from '../layouts/PageLayout.astro';
+import TalksList from '../components/TalksList.astro';
+
+const talks = (await getCollection('presentations')).sort(
+  (a, b) => b.data.startDate.getTime() - a.data.startDate.getTime()
+);
+
+---
+<PageLayout
+  title="Talks & posters"
+  eyebrow="Speaking"
+  lead="Conference talks, invited lectures, and posters."
+  description="Talks and posters at conferences."
+>
+  <TalksList talks={talks} />
+</PageLayout>
